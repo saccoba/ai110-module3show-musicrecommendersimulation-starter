@@ -19,14 +19,82 @@ Replace this paragraph with your own summary of what your version does.
 
 Explain your design in plain language.
 
+## 🧩 Real-world recommendations Answer
+
+Real-world recommender systems combine massive behavior logs (what millions of users played, skipped, liked), content and context metadata, and machine learning models to generate candidate items, score how well each candidate matches a user’s profile/session, then rank with business constraints (diversity, freshness, novelty). Your version will prioritize the same core: reliable item-level scoring (distance to user "vibe" preference using energy/valence/danceability/acousticness), simple ranking by score, and a basic filter for repeats. My focus first will be on correctness and explainability before adding complexity like exploration or session-aware dynamics.
+
 Some prompts to answer:
 
 - What features does each `Song` use in your system
   - For example: genre, mood, energy, tempo
-- What information does your `UserProfile` store
-- How does your `Recommender` compute a score for each song
-- How do you choose which songs to recommend
 
+ Song
+id (int)
+title (string)
+artist (string)
+genre (string)
+mood (string)
+numeric audio features (floats 0..1):
+energy
+valence
+danceability
+acousticness
+tempo_bpm (normalized to tempo_scaled for vector math)
+
+
+- What information does your `UserProfile` store
+UserProfile
+user_id (int/string)
+preferred_genres (list or distribution)
+preferred_moods (list or distribution)
+target_features (float vector):
+energy_pref
+valence_pref
+danceability_pref
+acousticness_pref
+tempo_pref (0..1 normalized)
+optional behavior history (for sim):
+liked_songs (list of song IDs)
+recent_session (sequence of last N song IDs)
+feature_history stats (mean energy, mean valence, etc.)
+
+- How does your `Recommender` compute a score for each song
+1. How the Recommender computes a score for each song
+Song feature vector (normalized):
+
+energy, valence, danceability, acousticness in [0,1]
+tempo_scaled in [0,1]
+optional 1-hot genre/mood
+UserProfile target vector:
+
+energy_pref, valence_pref, danceability_pref, acousticness_pref, tempo_pref
+Per-feature distance-to-preference (example with triangular kernel):
+
+score_f = max(0, 1 - abs(song_f - pref_f) / delta)
+delta controls tolerance (e.g., 0.3)
+Weighted combined score:
+
+song_score = w_e*score_energy + w_v*score_valence + ... + w_t*score_tempo
+weights sum to 1 (e.g., 0.25 each for basic model)
+Final (optional) category boost:
+
++0.1 if genre matches user preferred genre
++0.1 if mood matches preferred mood
+cap at 1.0
+So each song gets a scalar relevance score in [0,1].
+
+## Recommender output image
+
+![Recommender output](recommender.png)
+
+- How do you choose which songs to recommend
+Generate candidate songs (the full catalog or filtered subset)
+Compute song_score for each
+Sort descending by song_score
+Apply simple business filters:
+exclude previously played songs
+optionally require min genre/mood diversity
+Return top-K (e.g., top 5 or top 10)
 You can include a simple diagram or bullet list if helpful.
 
 ---
