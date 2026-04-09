@@ -84,7 +84,7 @@ cap at 1.0
 So each song gets a scalar relevance score in [0,1].
 
 ## Recommender output image
-
+![Recommender output](recommender2.png)
 ![Recommender output](recommender.png)
 
 - How do you choose which songs to recommend
